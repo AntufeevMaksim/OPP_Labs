@@ -12,6 +12,7 @@ private:
     int height_;
     std::vector<std::vector<double>> data;
 public:
+    Matrix() = default;
     Matrix(int st_h, int st_w,
          int w, int h,
         IMatrixGetter& getter);

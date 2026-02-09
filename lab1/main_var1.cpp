@@ -6,6 +6,7 @@
 #include <iostream>
 #include "matrix.hpp"
 #include "first_matrix.hpp"
+#include "common.hpp"
 
 double dot(const std::vector<double> &a,
            const std::vector<double> &b,
@@ -39,13 +40,13 @@ int main(int argc, char **argv)
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &total);
 
-    const int N = 1000;
+    int N;
+    init_N(N, argv[1]);
     const double eps = 1e-5;
 
     std::vector<double> xn(N, 0.0);
     std::vector<double> yn(N, 0.0);
     std::vector<double> Ayn(N, 0.0);
-    //std::vector<double> b(N, N + 1.0);
 
 
 
@@ -53,26 +54,14 @@ int main(int argc, char **argv)
     int rem = N % total;
     int start_h = rank * rows + std::min(rank, rem);
     int height = rows + (rank < rem ? 1 : 0);
-    // std::cout << "rows " << rows << " start_h " << start_h << " height " << height << std::endl;
-    FirstMatrix mat_getter;
-    Matrix A(start_h, 0, N, height, mat_getter);
 
-    /////////////////////////////////////////////
-        std::vector<double> u(N);
-    for (int i = 0; i < N; i++)
-        u[i] = sin(2 * M_PI * i / N); // ← делим на N!
-    if (rank == 0)
-    {
-        printf("u %lf %lf %lf\n", u[0], u[1], u[2]);
-    }
-    std::vector<double> b = A.MulFullVec(u);
-    MPI_Allreduce(MPI_IN_PLACE, b.data(), N,
-                  MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    ////////////////////////////////////////////
+    Matrix A;
+    std::vector<double> b;
+    init_mat_vec1(A, b, argv[2], N, start_h, height, rows);
 
-    // считаем ||b||
+
     double norm_b = std::sqrt(calc_dot(b, b, start_h, height));
-    // std::cout << norm_b << std::endl;
+
     double t0 = MPI_Wtime();
     int iter = 0;
 
@@ -83,25 +72,20 @@ int main(int argc, char **argv)
         vec_sum(yn, yn, b, start_h, height, -1.0);
         MPI_Allreduce(MPI_IN_PLACE, yn.data(), N, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-        // считаем ||y||
+
         double norm_y = std::sqrt(calc_dot(yn, yn, start_h, height));
 
         if (norm_y / norm_b < eps)
             break;
 
-        // calc tau
+        // tau
         Ayn = A.MulFullVec(yn); // Ayn = A*yn
-
         MPI_Allreduce(MPI_IN_PLACE, Ayn.data(), N, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
         double num = calc_dot(Ayn, yn, start_h, height);
         double den = calc_dot(Ayn, Ayn, start_h, height);
         double tau = num / den;
 
-        if (rank == 1)
-        {
-            printf("xn%d %lf %lf %lf\n", iter, xn[0], xn[1], xn[2]);
-            printf("y%d %lf %lf %lf\n", iter, yn[0], yn[1], yn[2]);
-        }
         // x(n+1) = xn - tau*yn
         vec_sum(xn, xn, yn, start_h, height, -tau);
         MPI_Allreduce(MPI_IN_PLACE, xn.data(), N, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);

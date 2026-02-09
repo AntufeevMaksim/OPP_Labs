@@ -6,10 +6,12 @@
 #include <iostream>
 #include "matrix.hpp"
 #include "first_matrix.hpp"
+#include "heat_matrix.hpp"
+#include "common.hpp"
 #include <fstream>
+#include <cstring>
 
-int rank, size;
-const int N = 1000;
+int rank, size, N;
 const double eps = 1e-5;
 int rows, rem;
 
@@ -67,13 +69,13 @@ static inline int get_height(int rank)
     return rows + (rank < rem ? 1 : 0);
 }
 
-void write_res(std::vector<double> &data, int size)
+void write_res(std::vector<double> &data, int data_size)
 {
     if (rank == 0)
     {
-        std::fstream out_file("result_vec", std::ios::trunc);
+        std::fstream out_file("result_vec.txt", std::ios::out | std::ios::trunc);
 
-        for (int i = 0; i < size; ++i)
+        for (int i = 0; i < data_size; ++i)
         {
             out_file << data[i] << '\n';
         }
@@ -83,13 +85,12 @@ void write_res(std::vector<double> &data, int size)
     {
         if (rank == i)
         {
-            // Ждем завершения процесса i-1
             MPI_Recv(NULL, 0, MPI_INT, i - 1, 0,
                      MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-            std::fstream out_file("result_vec", std::ios::app);
+            std::fstream out_file("result_vec.txt", std::ios::out | std::ios::app);
 
-            for (int i = 0; i < size; ++i)
+            for (int i = 0; i < data_size; ++i)
             {
                 out_file << data[i] << '\n';
             }
@@ -97,7 +98,6 @@ void write_res(std::vector<double> &data, int size)
         }
         else if (rank == i - 1)
         {
-            // Сигнализируем следующему процессу
             MPI_Send(NULL, 0, MPI_INT, i, 0, MPI_COMM_WORLD);
         }
     }
@@ -106,10 +106,17 @@ void write_res(std::vector<double> &data, int size)
 
 int main(int argc, char **argv)
 {
+    if (argc != 3)
+    {
+        std::cerr << "Wrong amount of args: " << argc << " argc must be 2" << std::endl;
+    }
+
     MPI_Init(&argc, &argv);
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    init_N(N, argv[1]);
 
     rows = N / size;
     rem = N % size;
@@ -118,15 +125,19 @@ int main(int argc, char **argv)
     std::vector<double> xn(rows + 1, 0.0);
     std::vector<double> yn(rows + 1, 0.0);
     std::vector<double> Ayn(rows + 1, 0.0);
-    std::vector<double> b(rows + 1, N + 1.0);
-    FirstMatrix mat_getter;
-    Matrix A(start_h, 0, N, get_height(rank), mat_getter);
+
+    Matrix A;
+    std::vector<double> b;
+    init_mat_vec2(A, b, argv[2], N, start_h, get_height(rank), rows);
+
+
+
 
     double norm_b = calc_norm(b, get_height(rank));
     double t0 = MPI_Wtime();
     int iter = 0;
 
-    while (iter < 3)
+    while (iter < 1000000)
     {
         // yn = A*xn
         mul_part_vec_mat(yn, A, xn, get_height(rank));
@@ -139,7 +150,7 @@ int main(int argc, char **argv)
         if (norm_y / norm_b < eps)
             break;
 
-        // calc tau
+        // tau
         mul_part_vec_mat(Ayn, A, yn, get_height(rank));
 
         double num = calc_dot(Ayn, yn, get_height(rank));
@@ -159,8 +170,6 @@ int main(int argc, char **argv)
         std::cout << "Iterations: " << iter << "\n";
         std::cout << "Time: " << (t1 - t0) << " s\n";
     }
-    printf("rank: %d x[0]: %lf\n", rank, xn[0]);
-
 
     write_res(xn, get_height(rank));
     MPI_Finalize();
