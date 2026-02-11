@@ -12,7 +12,7 @@
 #include <cstring>
 
 int rank, size, N;
-const double eps = 1e-5;
+const double eps = 1e-7;
 int rows, rem;
 
 double dot(const std::vector<double> &a,
@@ -133,11 +133,11 @@ int main(int argc, char **argv)
 
 
 
-    double norm_b = calc_norm(b, get_height(rank));
+    double norm_b = calc_dot(b, b, get_height(rank));
     double t0 = MPI_Wtime();
     int iter = 0;
 
-    while (iter < 1000000)
+    while (iter < 10000)
     {
         // yn = A*xn
         mul_part_vec_mat(yn, A, xn, get_height(rank));
@@ -145,9 +145,9 @@ int main(int argc, char **argv)
         // yn = A*xn - b
         vec_sum(yn, yn, b, get_height(rank), -1.0);
 
-        double norm_y = calc_norm(yn, get_height(rank));
+        double norm_y = calc_dot(yn, yn, get_height(rank));
 
-        if (norm_y / norm_b < eps)
+        if (norm_y / norm_b < eps*eps)
             break;
 
         // tau
@@ -167,8 +167,7 @@ int main(int argc, char **argv)
 
     if (rank == 0)
     {
-        std::cout << "Iterations: " << iter << "\n";
-        std::cout << "Time: " << (t1 - t0) << " s\n";
+        write_info(iter, t1 - t0, 2, size);
     }
 
     write_res(xn, get_height(rank));

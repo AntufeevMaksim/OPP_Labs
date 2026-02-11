@@ -3,10 +3,27 @@
 #include "first_matrix.hpp"
 #include "heat_matrix.hpp"
 
+#include <fstream>
 #include <cstring>
 #include <iostream>
 #include <random>
 #include <algorithm>
+
+std::pair<int, int> computeGridSize(int N)
+{
+    int Ny = static_cast<int>(std::sqrt(N));
+
+    while (Ny > 0)
+    {
+        if (N % Ny == 0)
+            break;
+        --Ny;
+    }
+
+    int Nx = N / Ny;
+
+    return {Nx, Ny};
+}
 
 std::vector<double> generateB(int Nx, int Ny, int sourcesCount)
 {
@@ -38,14 +55,15 @@ void init_mat_vec1(Matrix &A, std::vector<double> &b, char *arg, int N, int star
     if (!std::strcmp(arg, "mat1"))
     {
         FirstMatrix mat_getter;
-        A = Matrix(start_h, 0, N, h, mat_getter);
+        A = Matrix(start_h, N, h, mat_getter);
         b = std::vector<double>(N, N + 1.0);
     }
     else if (!std::strcmp(arg, "math"))
     {
-        HeatMatrix mat_getter(N / 30, 30);
-        A = Matrix(start_h, 0, N, h, mat_getter);
-        b = generateB(N / 30, 30);
+        auto [Nx, Ny] = computeGridSize(N);
+        HeatMatrix mat_getter(Nx, Ny);
+        A = Matrix(start_h, N, h, mat_getter);
+        b = generateB(Nx, Ny);
     }
     else
     {
@@ -58,14 +76,15 @@ void init_mat_vec2(Matrix &A, std::vector<double> &b, char *arg, int N, int star
     if (!std::strcmp(arg, "mat1"))
     {
         FirstMatrix mat_getter;
-        A = Matrix(start_h, 0, N, h, mat_getter);
+        A = Matrix(start_h, N, h, mat_getter);
         b = std::vector<double>(rows + 1, N + 1.0);
     }
     else if (!std::strcmp(arg, "math"))
     {
-        HeatMatrix mat_getter(N / 30, 30);
-        A = Matrix(start_h, 0, N, h, mat_getter);
-        std::vector<double> tmp = generateB(N / 30, 30);
+        auto [Nx, Ny] = computeGridSize(N);
+        HeatMatrix mat_getter(Nx, Ny);
+        A = Matrix(start_h, N, h, mat_getter);
+        std::vector<double> tmp = generateB(Nx, Ny);
         b.assign(tmp.begin() + start_h, tmp.begin() + start_h + rows + 1);
     }
     else
@@ -86,4 +105,14 @@ void init_N(int &N, char* arg)
     {
         std::cerr << "Invalid argument: " << e.what() << std::endl;
     }
+}
+
+void write_info(int iter, double time, int var, int num_proc)
+{
+    std::fstream out_file("info.txt", std::ios::out | std::ios::trunc);
+
+    out_file << "Variant: " << var << " Num processes: " << num_proc << std::endl;
+    out_file << "Iterations: " << iter << std::endl;
+    out_file << "Time: " << time << std::endl;
+    out_file.close();    
 }

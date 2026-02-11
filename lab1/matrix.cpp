@@ -5,9 +5,8 @@
 #include <vector>
 #include <stdexcept>
 
-Matrix::Matrix(int st_h, int st_w, int w, int h, IMatrixGetter& getter)
+Matrix::Matrix(int st_h, int w, int h, IMatrixGetter& getter)
     : st_h_(st_h),
-      st_w_(st_w),
       width_(w),
       height_(h),
       data(height_, std::vector<double>(width_, 0.0f))
@@ -16,7 +15,7 @@ Matrix::Matrix(int st_h, int st_w, int w, int h, IMatrixGetter& getter)
         {
             for(int j = 0; j < width_; ++j)
             {
-                data[i][j] = getter.get(i + st_h_, j + st_w_);
+                data[i][j] = getter.get(i + st_h_, j);
             }
         }
       }
@@ -24,7 +23,6 @@ Matrix::Matrix(int st_h, int st_w, int w, int h, IMatrixGetter& getter)
 double Matrix::get(int i, int j)
 {
     i -= st_h_;
-    j -= st_w_;
     return data[i][j];
 }
 std::vector<double> Matrix::MulFullVec(std::vector<double> &x)
@@ -34,7 +32,7 @@ std::vector<double> Matrix::MulFullVec(std::vector<double> &x)
     {
         double sum = 0.0;
         for (int j = 0; j < width_; ++j)
-            sum += data[i][j] * x[j + st_w_];
+            sum += data[i][j] * x[j];
         res[i + st_h_] = sum;
     }
     return res;

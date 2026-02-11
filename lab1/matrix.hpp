@@ -13,7 +13,7 @@ private:
     std::vector<std::vector<double>> data;
 public:
     Matrix() = default;
-    Matrix(int st_h, int st_w,
+    Matrix(int st_h,
          int w, int h,
         IMatrixGetter& getter);
 
