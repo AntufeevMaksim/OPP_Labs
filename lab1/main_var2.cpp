@@ -11,9 +11,23 @@
 #include <fstream>
 #include <cstring>
 
+#include <mpe.h>
+#include <sys/resource.h>
+
+int EVENT_COMP_START, EVENT_COMP_END;
+int EVENT_COMM_START, EVENT_COMM_END;
+int EVENT_ITER_START, EVENT_ITER_END;
+
 int rank, size, N;
 const double eps = 1e-7;
 int rows, rem;
+
+long get_memory_usage()
+{
+    struct rusage usage;
+    getrusage(RUSAGE_SELF, &usage);
+    return usage.ru_maxrss; // KB
+}
 
 double dot(const std::vector<double> &a,
            const std::vector<double> &b,
@@ -35,7 +49,11 @@ static inline double calc_dot(std::vector<double> &vec1, std::vector<double> &ve
 {
     double norm_local = dot(vec1, vec2, height);
     double norm;
+    MPE_Log_event(EVENT_COMP_END, 0, NULL);
+    MPE_Log_event(EVENT_COMM_START, 0, NULL);
     MPI_Allreduce(&norm_local, &norm, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    MPE_Log_event(EVENT_COMM_END, 0, NULL);
+    MPE_Log_event(EVENT_COMP_START, 0, NULL);
     return norm;
 }
 
@@ -52,10 +70,14 @@ static inline void mul_part_vec_mat(std::vector<double> &res, Matrix &mat, std::
         std::vector<double> tmp = mat.MulPartVec(vec, start_h, height);
         vec_sum(res, res, tmp, res.size());
 
+        MPE_Log_event(EVENT_COMP_END, 0, NULL);
+        MPE_Log_event(EVENT_COMM_START, 0, NULL);
         MPI_Sendrecv_replace(vec.data(), vec.size(), MPI_DOUBLE,
                              (rank - 1 + size) % size, 0, // source
                              (rank + 1) % size, 0,        // dest
                              MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPE_Log_event(EVENT_COMM_END, 0, NULL);
+        MPE_Log_event(EVENT_COMP_START, 0, NULL);
         curr = (curr + 1) % size;
     }
 }
@@ -113,6 +135,18 @@ int main(int argc, char **argv)
 
     MPI_Init(&argc, &argv);
 
+    MPE_Log_get_state_eventIDs(&EVENT_COMP_START, &EVENT_COMP_END);
+    MPE_Describe_state(EVENT_COMP_START, EVENT_COMP_END,
+                       "COMPUTE", "red");
+
+    MPE_Log_get_state_eventIDs(&EVENT_COMM_START, &EVENT_COMM_END);
+    MPE_Describe_state(EVENT_COMM_START, EVENT_COMM_END,
+                       "COMM", "blue");
+
+    MPE_Log_get_state_eventIDs(&EVENT_ITER_START, &EVENT_ITER_END);
+    MPE_Describe_state(EVENT_ITER_START, EVENT_ITER_END,
+                       "ITER", "green");
+
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
@@ -130,15 +164,14 @@ int main(int argc, char **argv)
     std::vector<double> b;
     init_mat_vec2(A, b, argv[2], N, start_h, get_height(rank), rows);
 
-
-
-
     double norm_b = calc_dot(b, b, get_height(rank));
     double t0 = MPI_Wtime();
     int iter = 0;
 
     while (iter < 10000)
     {
+        MPE_Log_event(EVENT_ITER_START, 0, NULL);
+        MPE_Log_event(EVENT_COMP_START, 0, NULL);
         // yn = A*xn
         mul_part_vec_mat(yn, A, xn, get_height(rank));
 
@@ -147,7 +180,9 @@ int main(int argc, char **argv)
 
         double norm_y = calc_dot(yn, yn, get_height(rank));
 
-        if (norm_y / norm_b < eps*eps)
+        if (norm_y / norm_b < eps * eps)
+            MPE_Log_event(EVENT_COMP_END, 0, NULL);
+            MPE_Log_event(EVENT_ITER_END, 0, NULL);
             break;
 
         // tau
@@ -161,13 +196,20 @@ int main(int argc, char **argv)
         vec_sum(xn, xn, yn, get_height(rank), -tau);
 
         iter++;
+        MPE_Log_event(EVENT_COMP_END, 0, NULL);
+        MPE_Log_event(EVENT_ITER_END, 0, NULL);
     }
+    long local_mem = get_memory_usage();
+    long total_mem = 0;
 
+    MPI_Reduce(&local_mem, &total_mem,
+               1, MPI_LONG, MPI_SUM,
+               0, MPI_COMM_WORLD);
     double t1 = MPI_Wtime();
 
     if (rank == 0)
     {
-        write_info(iter, t1 - t0, 2, size);
+        write_info(iter, t1 - t0, 2, size, total_mem);
     }
 
     write_res(xn, get_height(rank));

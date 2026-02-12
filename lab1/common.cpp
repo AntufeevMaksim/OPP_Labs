@@ -107,12 +107,13 @@ void init_N(int &N, char* arg)
     }
 }
 
-void write_info(int iter, double time, int var, int num_proc)
+void write_info(int iter, double time, int var, int num_proc, long total_mem)
 {
     std::fstream out_file("info.txt", std::ios::out | std::ios::trunc);
 
     out_file << "Variant: " << var << " Num processes: " << num_proc << std::endl;
     out_file << "Iterations: " << iter << std::endl;
     out_file << "Time: " << time << std::endl;
+    out_file << "Total mem:" << total_mem << std::endl;
     out_file.close();    
 }
