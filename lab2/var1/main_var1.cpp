@@ -9,6 +9,8 @@
 #include <fstream>
 #include <chrono>
 #include <omp.h>
+#include <string>
+
 void write_res(std::vector<double> &data)
 {
     std::fstream out_file("result_vec.txt", std::ios::out | std::ios::trunc);
@@ -22,12 +24,38 @@ void write_res(std::vector<double> &data)
 
 double dot(const std::vector<double> &a,
            const std::vector<double> &b,
-           int start, int count)
+           int start, int count,
+           const std::string& schedule_type,
+           int chunk_size)
 {
     double s = 0.0;
-    #pragma omp parallel for reduction(+:s)
-    for (int i = start; i < start + count; ++i)
-        s += a[i] * b[i];
+    
+    if (schedule_type == "static") {
+        #pragma omp parallel for reduction(+:s) schedule(static, chunk_size)
+        for (int i = start; i < start + count; ++i)
+            s += a[i] * b[i];
+    }
+    else if (schedule_type == "dynamic") {
+        #pragma omp parallel for reduction(+:s) schedule(dynamic, chunk_size)
+        for (int i = start; i < start + count; ++i)
+            s += a[i] * b[i];
+    }
+    else if (schedule_type == "guided") {
+        #pragma omp parallel for reduction(+:s) schedule(guided, chunk_size)
+        for (int i = start; i < start + count; ++i)
+            s += a[i] * b[i];
+    }
+    else if (schedule_type == "auto") {
+        #pragma omp parallel for reduction(+:s) schedule(auto)
+        for (int i = start; i < start + count; ++i)
+            s += a[i] * b[i];
+    }
+    else if (schedule_type == "runtime") {
+        #pragma omp parallel for reduction(+:s) schedule(runtime)
+        for (int i = start; i < start + count; ++i)
+            s += a[i] * b[i];
+    }
+    
     return s;
 }
 
@@ -40,6 +68,9 @@ static inline void vec_sum(std::vector<double> &result, std::vector<double> &vec
 
 int main(int argc, char **argv)
 {
+    std::string shedule_type = "auto";
+    int chunk_size = 2048;
+
     int num_threads;
     init_num(num_threads, argv[1]);
     omp_set_num_threads(num_threads);
@@ -55,26 +86,26 @@ int main(int argc, char **argv)
     std::vector<double> b;
     init_mat_vec1(A, b, argv[3], N, 0, N, N);
 
-    double norm_b = dot(b, b, 0, N);
+    double norm_b = dot(b, b, 0, N, shedule_type, chunk_size);
 
     int iter = 0;
     auto start = std::chrono::high_resolution_clock::now();
     while (iter < 100000)
     {
 
-        yn = A.MulFullVec(xn);
+        yn = A.MulFullVec(xn, shedule_type, chunk_size);
         vec_sum(yn, yn, b, 0, N, -1.0);
 
-        double norm_y = dot(yn, yn, 0, N);
+        double norm_y = dot(yn, yn, 0, N, shedule_type, chunk_size);
 
         if (norm_y / norm_b < eps * eps)
             break;
 
-        Ayn = A.MulFullVec(yn); // Ayn = A*yn
+        Ayn = A.MulFullVec(yn, shedule_type, chunk_size); // Ayn = A*yn
 
 
-        double num = dot(Ayn, yn, 0, N);
-        double den = dot(Ayn, Ayn, 0, N);
+        double num = dot(Ayn, yn, 0, N, shedule_type, chunk_size);
+        double den = dot(Ayn, Ayn, 0, N, shedule_type, chunk_size);
         double tau = num / den;
 
         // x(n+1) = xn - tau*yn

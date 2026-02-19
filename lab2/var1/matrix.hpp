@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <string>
 #include "matrix_getter.hpp"
 
 class Matrix
@@ -19,5 +20,7 @@ public:
 
     double get(int i, int j);
 
-    std::vector<double> MulFullVec(std::vector<double> &x);
+    std::vector<double> MulFullVec(std::vector<double> &x,
+                                       const std::string& schedule_type,
+                                       int chunk_size = 0);
 };
