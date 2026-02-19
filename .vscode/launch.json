@@ -1,0 +1,28 @@
+   {
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "name": "Launch var1",
+                "type": "cppdbg",
+                "request": "launch",
+                "program": "${workspaceFolder}/lab2/var1/main_var1", // Adjust this>
+                "args": [],
+                "stopAtEntry": false,
+                "cwd": "${workspaceFolder}/lab2",
+                "environment": [],
+                "externalConsole": false
+            },
+            {
+                "name": "Launch var2",
+                "type": "cppdbg",
+                "request": "launch",
+                "program": "${workspaceFolder}/lab2/var2/main_var1", // Adjust this>
+                "args": [],
+                "stopAtEntry": false,
+                "cwd": "${workspaceFolder}/lab2",
+                "environment": [],
+                "externalConsole": false
+            }
+        ]
+    }
+

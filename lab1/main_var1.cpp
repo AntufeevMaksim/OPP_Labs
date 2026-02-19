@@ -69,7 +69,7 @@ int main(int argc, char **argv)
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     int N;
-    init_N(N, argv[1]);
+    init_num(N, argv[1]);
     const double eps = 1e-5;
 
     std::vector<double> xn(N, 0.0);

@@ -50,19 +50,19 @@ bool is_number(const std::string &str)
                                        { return std::isdigit(c); });
 }
 
-void init_mat_vec1(Matrix &A, std::vector<double> &b, char *arg, int N, int start_h, int h, int rows)
+void init_mat_vec1(Matrix &A, std::vector<double> &b, char *arg, int N, int h, int rows)
 {
     if (!std::strcmp(arg, "mat1"))
     {
         FirstMatrix mat_getter;
-        A = Matrix(start_h, N, h, mat_getter);
+        A = Matrix(N, h, mat_getter);
         b = std::vector<double>(N, N + 1.0);
     }
     else if (!std::strcmp(arg, "math"))
     {
         auto [Nx, Ny] = computeGridSize(N);
         HeatMatrix mat_getter(Nx, Ny);
-        A = Matrix(start_h, N, h, mat_getter);
+        A = Matrix(N, h, mat_getter);
         b = generateB(Nx, Ny);
     }
     else
@@ -71,21 +71,21 @@ void init_mat_vec1(Matrix &A, std::vector<double> &b, char *arg, int N, int star
     }
 }
 
-void init_mat_vec2(Matrix &A, std::vector<double> &b, char *arg, int N, int start_h, int h, int rows)
+void init_mat_vec2(Matrix &A, std::vector<double> &b, char *arg, int N, int h, int rows)
 {
     if (!std::strcmp(arg, "mat1"))
     {
         FirstMatrix mat_getter;
-        A = Matrix(start_h, N, h, mat_getter);
+        A = Matrix(N, h, mat_getter);
         b = std::vector<double>(rows + 1, N + 1.0);
     }
     else if (!std::strcmp(arg, "math"))
     {
         auto [Nx, Ny] = computeGridSize(N);
         HeatMatrix mat_getter(Nx, Ny);
-        A = Matrix(start_h, N, h, mat_getter);
+        A = Matrix(N, h, mat_getter);
         std::vector<double> tmp = generateB(Nx, Ny);
-        b.assign(tmp.begin() + start_h, tmp.begin() + start_h + rows + 1);
+        b.assign(tmp.begin(), tmp.begin() + rows + 1);
     }
     else
     {
