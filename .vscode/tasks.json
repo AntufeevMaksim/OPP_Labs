@@ -1,0 +1,26 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "cppbuild",
+			"label": "C/C++: Build project",
+			"command": "/usr/bin/mpicxx",
+			"args": [
+				"-I/usr/lib/x86_64-linux-gnu/openmpi/include/",
+				"-g",
+				"${workspaceFolder}/lab3/common.cpp",
+				"${workspaceFolder}/lab3/main.cpp",
+				"-o",
+				"${workspaceFolder}/lab3/main.out"
+			],
+			"options": {
+				"cwd": "${fileDirname}"
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build",
+			"detail": "compiler: /usr/bin/mpicxx"
+		}
+	]
+}
