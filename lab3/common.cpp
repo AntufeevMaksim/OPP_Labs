@@ -59,7 +59,7 @@ void write_info(int iter, double time, int var, int num_proc, long total_mem)
 void write_mat(double* mat, int h, int w)
 {
     std::fstream out_file("output.txt", std::ios::out | std::ios::trunc);
-
+    //auto out_file = std::oute;
     for (int i = 0; i < h; ++i)
     {
         for (int j = 0; j < w; ++j)
@@ -68,6 +68,7 @@ void write_mat(double* mat, int h, int w)
         }
         out_file << std::endl;
     }
+    out_file.close();
 }
 
 void write_mat_colmajor(double* mat, int h, int w)
