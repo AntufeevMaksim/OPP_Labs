@@ -6,6 +6,10 @@
 #include <memory.h>
 #include <time.h>
 
+int EVENT_COMP_START, EVENT_COMP_END;
+int EVENT_COMM_START, EVENT_COMM_END;
+int EVENT_ITER_START, EVENT_ITER_END;
+
 typedef struct
 {
     int rows;
@@ -22,7 +26,7 @@ void write_info(int num_proc, double time)
     {
         perror("fopen");
         return;
-    }  
+    }
 
     fprintf(f, "Num proc: %d\n Total time: %lf\n", num_proc, time);
 }
@@ -148,7 +152,7 @@ bool *init_random(int N, unsigned int seed)
     return field;
 }
 
-bool *init_field(char* arg, int N)
+bool *init_field(char *arg, int N)
 {
     bool *field;
     if (strcmp(arg, "line") == 0)
@@ -169,7 +173,6 @@ bool *init_field(char* arg, int N)
     }
     return field;
 }
-
 
 bool calc_next_state(bool *field, int x, int y, int local_sx, int local_sy)
 {
@@ -241,6 +244,8 @@ bool *run_game(bool *local_field, int iters, ProgramData *data, int coord, MPI_C
 
     for (int i = 0; i < iters; ++i)
     {
+        MPE_Log_event(EVENT_ITER_START, 0, NULL);
+        MPE_Log_event(EVENT_COMP_START, 0, NULL);
 
         if (coord != 0)
         {
@@ -262,6 +267,7 @@ bool *run_game(bool *local_field, int iters, ProgramData *data, int coord, MPI_C
             MPI_Isend(tmp + data->N * (h - 2), data->N, MPI_C_BOOL, coord + 1, SEND_DOWN, comm_1d, &send_down);
             MPI_Irecv(tmp + data->N * (h - 1), data->N, MPI_C_BOOL, coord + 1, RECV_DOWN, comm_1d, &recv_down);
         }
+        MPE_Log_event(EVENT_COMM_START, 0, NULL);
 
         int st = coord == 0 ? 0 : 1;
         for (int y = st; y < proc_h + st; ++y)
@@ -271,6 +277,7 @@ bool *run_game(bool *local_field, int iters, ProgramData *data, int coord, MPI_C
                 tmp[data->N * y + x] = calc_next_state(local_field, x, y, data->N, h);
             }
         }
+        MPE_Log_event(EVENT_COMP_END, 0, NULL);
 
         if (coord != 0)
         {
@@ -282,8 +289,10 @@ bool *run_game(bool *local_field, int iters, ProgramData *data, int coord, MPI_C
             MPI_Wait(&send_down, MPI_STATUS_IGNORE);
             MPI_Wait(&recv_down, MPI_STATUS_IGNORE);
         }
-
+        MPE_Log_event(EVENT_COMM_END, 0, NULL);
         swap(&tmp, &local_field);
+
+        MPE_Log_event(EVENT_ITER_END, 0, NULL);
     }
     free(tmp);
     return local_field;
@@ -314,9 +323,22 @@ int main(int argc, char **argv)
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
+    MPE_Log_get_state_eventIDs(&EVENT_COMP_START, &EVENT_COMP_END);
+    MPE_Describe_state(EVENT_COMP_START, EVENT_COMP_END,
+                       "COMPUTE", "red");
+
+    MPE_Log_get_state_eventIDs(&EVENT_COMM_START, &EVENT_COMM_END);
+    MPE_Describe_state(EVENT_COMM_START, EVENT_COMM_END,
+                       "COMM", "blue");
+
+    MPE_Log_get_state_eventIDs(&EVENT_ITER_START, &EVENT_ITER_END);
+    MPE_Describe_state(EVENT_ITER_START, EVENT_ITER_END,
+                       "ITER", "green");
+
     if (argc != 4)
     {
-        if (rank == 0) printf("Wrong amount of args");
+        if (rank == 0)
+            printf("Wrong amount of args");
         return 0;
     }
 
@@ -365,7 +387,7 @@ int main(int argc, char **argv)
     recv_field(field, local_field, coord, &data, comm_1d);
 
     clock_gettime(CLOCK_MONOTONIC, &end);
-    double elapsed = (end.tv_sec - start.tv_sec) + 
+    double elapsed = (end.tv_sec - start.tv_sec) +
                      (end.tv_nsec - start.tv_nsec) / 1e9;
     if (coord == 0)
     {
