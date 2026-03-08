@@ -1,0 +1,36 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "cppbuild",
+			"label": "C/C++: build lab5",
+			"command": "/usr/bin/mpicxx",
+			"args": [
+//				"-fcolor-diagnostics",
+//				"-fansi-escape-codes",
+				"-I${workspaceFolder}/lab5",
+				"-I${workspaceFolder}/lab5/producer",
+				"-I${workspaceFolder}/lab5/tasks",
+				"-g",
+				"${workspaceFolder}/lab5/main.cpp",
+				"${workspaceFolder}/lab5/tasks/actual_task.cpp",
+				"${workspaceFolder}/lab5/executor.cpp",
+				"${workspaceFolder}/lab5/producer/linear_producer.cpp",
+				"${workspaceFolder}/lab5/producer/IProducer.cpp",
+				"-o",
+				"${workspaceFolder}/lab5/main.out",
+			],
+			"options": {
+				"cwd": "${fileDirname}"
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"detail": "compiler: /usr/bin/mpicxx"
+		}
+	]
+}
