@@ -7,6 +7,10 @@
 #include "actual_task.hpp"
 #include "linear_producer.hpp"
 #include "executor.hpp"
+#include "random_backoff_strategy.hpp"
+#include "task_manager.hpp"
+#include "message_protocol_tools.hpp"
+#include <thread>
 
 int main(int argc, char **argv)
 {
@@ -21,32 +25,30 @@ int main(int argc, char **argv)
     int nt = atoi(argv[1]);
 
     pthread_t prod_thread;
+    pthread_t task_sender;
     pthread_t exec_threads[nt];
 
-    auto tasks = std::make_shared<ThreadSafeQueue<std::unique_ptr<ITask>>>();
-    std::unique_ptr<IProducer> producer = std::make_unique<LinearProducer>(tasks);
+    TaskManager task_manager{size, rank, THREAD_RECV_TASKS};
+
+    std::unique_ptr<IProducer> producer = std::make_unique<LinearProducer>(task_manager.queue);
     pthread_create(&prod_thread, NULL,
                    &IProducer::thread_func, producer.get());
 
-    std::unique_ptr<Executor> executor = std::make_unique<Executor>(tasks);
     for (int i = 0; i < nt; i++)
     {
+        std::unique_ptr<ICommunicationStrategy> communication =
+            std::make_unique<RandomBackoffStrategy>(size, rank, i + 1);
+        auto executor = std::make_unique<Executor>(task_manager.queue, std::move(communication));
         pthread_create(&exec_threads[i], NULL,
                        &Executor::thread_func, executor.get());
     }
 
-    // Wait for prod thread to finish
-    pthread_join(prod_thread, NULL);
-    // Sending NULL to stop each exec thread
-    for (int i = 0; i < nt; i++)
-    {
-        tasks->push(nullptr);
-    }
-
-    for (int i = 0; i < nt; i++)
-    {
-        pthread_join(exec_threads[i], NULL);
-    }
+    // printf("123\n");
+    // fflush(stdout);
+    std::thread::id thread_id = std::this_thread::get_id();
+    std::cout << thread_id << std::endl;
+    fflush(stdout);
+    task_manager.run();
 
     MPI_Finalize();
 

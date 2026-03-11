@@ -55,10 +55,10 @@ public:
             pthread_mutex_unlock(&elems_mutex);
             return make_pair(T{}, false);
         }
-        T elem = elems.front();
+        T elem = std::move(elems.front());
         elems.pop();
         pthread_mutex_unlock(&elems_mutex);
-        return make_pair(elem, true);
+        return make_pair(std::move(elem), true);
     }
 
     ThreadSafeQueue(ThreadSafeQueue&& other) noexcept
