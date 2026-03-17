@@ -1,6 +1,6 @@
 #include "linear_producer.hpp"
 
-#include <actual_task.hpp>
+#include "actual_task.hpp"
 
 LinearProducer::LinearProducer(const std::shared_ptr<ThreadSafeQueue<std::unique_ptr<ITask>>>& tasks)
 : tasks_{tasks}

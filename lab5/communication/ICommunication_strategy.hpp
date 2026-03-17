@@ -8,5 +8,6 @@
 class ICommunicationStrategy
 {
 public:
+    virtual void request_tasks();
     virtual std::vector<std::unique_ptr<ITask>> GetTasks() = 0;
 };

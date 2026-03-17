@@ -1,11 +1,17 @@
 #include "actual_task.hpp"
 
+#include <thread>
+#include <chrono>
+
 #include <stdio.h>
+
+using namespace std::chrono_literals;
 
 ActualTask::ActualTask(int id) : id_{id} {}
 
 void ActualTask::execute()
 {
+    std::this_thread::sleep_for(100ms);
     printf("Task % d\n", id_);
     fflush(stdout);
 }

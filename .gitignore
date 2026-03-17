@@ -2,3 +2,22 @@
 *.txt
 *.py
 *.docx
+
+# CMake
+build/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+
+# Скомпилированные файлы
+*.o
+*.out
+lab5/lab5
+
+# Временные файлы
+*.swp
+*.swo
+*~
+.DS_Store

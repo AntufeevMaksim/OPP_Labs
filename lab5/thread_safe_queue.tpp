@@ -3,7 +3,7 @@
 #include <pthread.h>
 #include <queue>
 #include <memory>
-
+#include <atomic>
 
 template <typename T>
 class ThreadSafeQueue
@@ -69,8 +69,12 @@ public:
         pthread_mutex_lock(&other.elems_mutex);
         
         elems = std::move(other.elems);
-        
         pthread_mutex_unlock(&other.elems_mutex);
+    }
+
+    size_t size() const
+    {
+        return elems.size();
     }
 private:
     std::queue<T> elems;

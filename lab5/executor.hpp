@@ -8,11 +8,9 @@ class Executor
 {
 public:
     static void* thread_func(void* arg);
-    Executor(const std::shared_ptr<ThreadSafeQueue<std::unique_ptr<ITask>>>& tasks,
-    std::unique_ptr<ICommunicationStrategy> communication);
+    Executor(const std::shared_ptr<ThreadSafeQueue<std::unique_ptr<ITask>>>& tasks);
     void execute();
 
 private:
     std::shared_ptr<ThreadSafeQueue<std::unique_ptr<ITask>>> tasks_;
-    std::unique_ptr<ICommunicationStrategy> communication_;
 };
