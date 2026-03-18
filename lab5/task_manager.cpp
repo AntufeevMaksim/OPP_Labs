@@ -6,10 +6,11 @@
 
 #include <stdio.h> //
 
-TaskManager::TaskManager(int process_count, int process_id, int thread_id)
+TaskManager::TaskManager(IProducer& producer, int process_count, int process_id, int thread_id)
     : process_id_{process_id},
       thread_id_{thread_id},
       process_count_{process_count},
+      producer_{producer},
       queue{std::make_shared<ThreadSafeQueue<std::unique_ptr<ITask>>>()}
 {
     gen = std::mt19937(rd());
@@ -38,11 +39,13 @@ void TaskManager::run()
 
             if (type == MessageType::REQUEST_TASKS)
             {
+                printf("type req\n");
                 std::unique_ptr<RequestTasksMessage> message(static_cast<RequestTasksMessage*>(recv.release()));
                 send_tasks(message, src_proc);
             }
             else if (type == MessageType::SEND_TASKS)
             {
+                printf("type send\n");
                 std::unique_ptr<SendTasksMessage> message(static_cast<SendTasksMessage*>(recv.release()));
                 recv_tasks(message);
             }
@@ -62,23 +65,37 @@ void TaskManager::send_tasks(std::unique_ptr<RequestTasksMessage>& message, int 
 
     if (success)
     {
+        if (task == nullptr)
+        {
+            printf("NULLPTR\n");
+        }
         tasks.push_back(std::move(task));
     }
 
+    printf("try to send\n");
     protocol_tools_.SendTasks(tasks, process, message->threadId());
 }
 
 void TaskManager::recv_tasks(std::unique_ptr<SendTasksMessage>& message)
 {
-    protocol_tools_.RecvTasks(message, *queue.get());    
+    printf("try recv\n");
+    fflush(stdout);
+    protocol_tools_.RecvTasks(message, *queue.get());
+    tasks_requested_ = false;    
 }
 
 bool TaskManager::need_to_request() 
 {
-    if (!already_request_ && queue->size() == 0)
+    if (!tasks_requested_ && queue->size() == 0)
     {
         auto now = std::chrono::steady_clock::now();
-        return !last_fail || (now - time_of_last >= std::chrono::milliseconds(100));
+        bool need_to_send = !last_fail || (now - time_of_last_request >= std::chrono::milliseconds(100));
+        if (need_to_send)
+        {
+            printf("need to send\n");
+            fflush(stdout);
+        }
+        return need_to_send;
     }
     return false;
 }
@@ -87,5 +104,11 @@ void TaskManager::request_tasks()
 {
     int dest_proc;
     while ((dest_proc = dist(gen)) == process_id_)
+    tasks_requested_ = true;
     protocol_tools_.RequestTasks(thread_id_, dest_proc,THREAD_RECV_TASKS);
+}
+
+inline bool TaskManager::can_stop() 
+{
+    return producer_.endJob() && !tasks_requested_;
 }

@@ -6,3 +6,8 @@ void* IProducer::thread_func(void* arg)
     self->produce();
     return 0;
 }
+
+bool IProducer::endJob() 
+{
+    return end_job_;    
+}

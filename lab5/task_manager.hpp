@@ -2,6 +2,7 @@
 
 #include "request_tasks_message.hpp"
 #include "message_protocol_tools.hpp"
+#include "IProducer.hpp"
 
 #include <memory>
 #include <atomic>
@@ -17,11 +18,13 @@ private:
 
     MessageProtocolTools protocol_tools_;
 
-    bool already_request_ = false;
+    bool tasks_requested_ = false;
     bool last_fail = false;
-    std::chrono::steady_clock::time_point time_of_last;
+    std::chrono::steady_clock::time_point time_of_last_request;
     bool need_to_request();
-    bool stop();
+
+    IProducer& producer_;
+    inline bool can_stop();
 
     std::random_device rd;
     std::mt19937 gen;
@@ -33,7 +36,7 @@ private:
     std::pair<int, std::unique_ptr<Message>> recv();
 
 public:
-    TaskManager(int process_count, int process_id, int thread_id);
+    TaskManager(IProducer& producer, int process_count, int process_id, int thread_id);
     void run();
     std::shared_ptr<ThreadSafeQueue<std::unique_ptr<ITask>>> queue;
     std::atomic<int> tasks_count;

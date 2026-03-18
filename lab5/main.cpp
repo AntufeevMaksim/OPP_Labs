@@ -9,7 +9,11 @@
 #include "executor.hpp"
 #include "task_manager.hpp"
 #include "message_protocol_tools.hpp"
+#include "test_producer.hpp"
 #include <thread>
+
+
+using namespace std::chrono_literals;
 
 int main(int argc, char **argv)
 {
@@ -33,7 +37,8 @@ int main(int argc, char **argv)
 
     TaskManager task_manager{size, rank, THREAD_RECV_TASKS};
 
-    std::unique_ptr<IProducer> producer = std::make_unique<LinearProducer>(task_manager.queue);
+    int count = rank == 0 ? 5 : 100;
+    std::unique_ptr<IProducer> producer = std::make_unique<TestProducer>(task_manager.queue, count);
     pthread_create(&prod_thread, NULL,
                    &IProducer::thread_func, producer.get());
 

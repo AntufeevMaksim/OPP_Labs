@@ -12,12 +12,16 @@
 
 void MessageProtocolTools::RecvTasks(std::unique_ptr<SendTasksMessage>& message, ThreadSafeQueue<std::unique_ptr<ITask>>& queue) 
 {
-    printf("recived\n");
     fflush(stdout);
     for (auto& task : message->tasks())
     {
+        if (task == nullptr)
+        {
+            printf("NULLPTR in RecvTasks");
+        }
         queue.push(std::move(task));
     }
+    printf("tasks recived\n");
 }
 
 
@@ -27,7 +31,6 @@ void MessageProtocolTools::SendTasks(
     int dest_process_id,
     uint32_t dest_thread_id)
 {
-    printf("sended\n");
     fflush(stdout);
     if (send_tasks_status != MPI_REQUEST_NULL)
     {
@@ -45,6 +48,8 @@ void MessageProtocolTools::SendTasks(
               MPI_COMM_WORLD,
               &send_tasks_status
             );
+    
+    printf("task successful sended to %d\n", dest_process_id);
 }
 
 void MessageProtocolTools::RequestTasks(uint32_t src_thread_id, int dest_process_id, uint32_t dest_thread_id) 
@@ -52,6 +57,8 @@ void MessageProtocolTools::RequestTasks(uint32_t src_thread_id, int dest_process
     RequestTasksMessage message(src_thread_id);
     std::vector<uint8_t> data = message.serialize();
     MPI_Send(data.data(), data.size(), MPI_BYTE, dest_process_id, dest_thread_id, MPI_COMM_WORLD);
+    printf("request task sended to %d\n", dest_process_id);
+    fflush(stdout);
 }
 
 
@@ -67,9 +74,14 @@ std::unique_ptr<Message> MessageProtocolTools::TryRead(int process, uint32_t thr
     int recv_size;
     MPI_Get_count(&status, MPI_BYTE, &recv_size);
 
+    printf("try to recv message from %d\n", process);
+    fflush(stdout);
     std::vector<uint8_t> recv_data(recv_size);
     MPI_Recv(recv_data.data(), recv_size, MPI_BYTE, process, thread, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
     std::unique_ptr<Message> message = MessageFactory::deserialize(recv_data);
+    //std::unique_ptr<Message> message;
+    printf("message recived from %d\n", process);
+    fflush(stdout);
     return message;
 }

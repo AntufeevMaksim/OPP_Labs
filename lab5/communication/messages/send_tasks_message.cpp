@@ -2,9 +2,9 @@
 
 SendTasksMessage::SendTasksMessage(
     uint32_t thread_id, size_t init_tasks_count)
-    : Message(MessageType::SEND_TASKS, thread_id),
-      tasks_(init_tasks_count)
+    : Message(MessageType::SEND_TASKS, thread_id)
 {
+    tasks_.reserve(init_tasks_count);
 }
 
 SendTasksMessage::SendTasksMessage(uint32_t thread_id, std::vector<std::unique_ptr<ITask>> &&tasks)
@@ -20,9 +20,7 @@ std::vector<std::unique_ptr<ITask>> &SendTasksMessage::tasks()
 
 std::vector<uint8_t> SendTasksMessage::serialize() const
 {
-    std::vector<uint8_t> data;
-
-    data.resize(sizeof(MessageType) + sizeof(uint32_t));
+    std::vector<uint8_t> data(sizeof(MessageType) + sizeof(uint32_t) + sizeof(uint32_t));
 
     data[0] = static_cast<uint8_t>(type_);
 
@@ -31,12 +29,9 @@ std::vector<uint8_t> SendTasksMessage::serialize() const
         &thread_id_,
         sizeof(uint32_t));
 
-    uint64_t count = tasks_.size();
+    uint32_t count = tasks_.size();
 
-    size_t old = data.size();
-    data.resize(old + sizeof(uint64_t));
-
-    memcpy(data.data() + old, &count, sizeof(uint64_t));
+    memcpy(data.data() + sizeof(MessageType) + sizeof(uint32_t), &count, sizeof(uint32_t));
 
     for (auto &task : tasks_)
     {
@@ -45,7 +40,7 @@ std::vector<uint8_t> SendTasksMessage::serialize() const
         uint64_t size = task_data.size();
         int id = static_cast<int>(task->getId());
 
-        old = data.size();
+        size_t old = data.size();
 
         data.resize(old + sizeof(uint64_t) + sizeof(int) + size);
 

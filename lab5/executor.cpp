@@ -23,10 +23,6 @@ void Executor::execute()
         {
             task->execute();
         }
-        else
-        {
-            break;
-        }
     }
     
 }

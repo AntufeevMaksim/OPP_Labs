@@ -65,4 +65,6 @@ std::unique_ptr<Message> MessageFactory::deserializeSendTasks(
 
         it += task_data_size;
     }
+
+    return message;
 }
