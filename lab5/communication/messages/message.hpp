@@ -7,7 +7,9 @@
 enum class MessageType : uint8_t
 {
     REQUEST_TASKS,
-    SEND_TASKS
+    SEND_TASKS,
+    TASKS_STAT,
+    STOP_PROGRAM
 };
 
 class Message

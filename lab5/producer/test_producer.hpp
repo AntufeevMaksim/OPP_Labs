@@ -1,15 +1,16 @@
 #pragma once
 
 #include "IProducer.hpp"
+#include "resources.hpp"
 
 class TestProducer : public IProducer
 {
 
 public:
-    TestProducer(const std::shared_ptr<ThreadSafeQueue<std::unique_ptr<ITask>>>& tasks, int count);
+    TestProducer(Resources& resources, int count);
     void produce() override;
+    virtual uint64_t totalTasks() override;
 
 private:
     int count_;
-    std::shared_ptr<ThreadSafeQueue<std::unique_ptr<ITask>>> tasks_;
 };

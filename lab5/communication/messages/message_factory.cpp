@@ -2,6 +2,8 @@
 
 #include "request_tasks_message.hpp"
 #include "send_tasks_message.hpp"
+#include "tasks_stat_message.hpp"
+#include "stop_program_message.hpp"
 #include "serializer.hpp"
 
 #include <stdexcept>
@@ -25,6 +27,11 @@ std::unique_ptr<Message> MessageFactory::deserialize(std::vector<uint8_t> &data)
     case MessageType::SEND_TASKS:
         return deserializeSendTasks(thread_id, data);
 
+    case MessageType::TASKS_STAT:
+        return deserializeTasksStat(thread_id, data);
+        
+    case MessageType::STOP_PROGRAM:
+        return std::make_unique<StopProgramMessage>(thread_id);        
     default:
         throw std::runtime_error("Unknown message type");
     }
@@ -66,5 +73,19 @@ std::unique_ptr<Message> MessageFactory::deserializeSendTasks(
         it += task_data_size;
     }
 
+    return message;
+}
+
+std::unique_ptr<Message> MessageFactory::deserializeTasksStat(
+        uint32_t thread_id,
+        std::vector<uint8_t> &data) 
+{
+    uint64_t total_tasks;
+    memcpy(&total_tasks, data.data() + HEADER_SIZE, sizeof(uint64_t));
+
+    uint64_t comleted_tasks;
+    memcpy(&comleted_tasks, data.data() + HEADER_SIZE + sizeof(uint64_t), sizeof(uint64_t));
+    
+    std::unique_ptr<Message> message = std::make_unique<TasksStatMessage>(thread_id, total_tasks, comleted_tasks);
     return message;
 }

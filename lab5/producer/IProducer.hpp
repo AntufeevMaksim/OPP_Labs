@@ -1,18 +1,17 @@
 #pragma once
 
-#include "thread_safe_queue.tpp"
-#include "ITask.hpp"
-
-#include <atomic>
+#include "resources.hpp"
 
 class IProducer
 {
 public:
+    IProducer(Resources& resources);
     static void* thread_func(void* arg);
     bool endJob();
+    virtual uint64_t totalTasks() = 0;
     virtual void produce() = 0;
     virtual ~IProducer() = default;
 protected:
-    std::atomic<bool> end_job_;
+    Resources& res_;
 };
 

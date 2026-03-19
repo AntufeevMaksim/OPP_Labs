@@ -9,8 +9,8 @@ void *Executor::thread_func(void *arg)
     return 0;
 }
 
-Executor::Executor(const std::shared_ptr<ThreadSafeQueue<std::unique_ptr<ITask>>> &tasks)
-    : tasks_{tasks}
+Executor::Executor(Resources& resources)
+    : res_{resources}
 {
 }
 
@@ -18,10 +18,15 @@ void Executor::execute()
 {
     while (true)
     {
-        std::unique_ptr<ITask> task = tasks_->pop();
+        std::unique_ptr<ITask> task = res_.queue.pop();
         if (task != nullptr)
         {
             task->execute();
+            res_.tasks_completed++;
+        }
+        else
+        {
+            return;
         }
     }
     

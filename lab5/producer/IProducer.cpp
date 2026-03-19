@@ -1,13 +1,13 @@
 #include "IProducer.hpp"
 
-void* IProducer::thread_func(void* arg)
+IProducer::IProducer(Resources &resources)
+    : res_(resources)
 {
-    IProducer* self = static_cast<IProducer*>(arg);
-    self->produce();
-    return 0;
 }
 
-bool IProducer::endJob() 
+void *IProducer::thread_func(void *arg)
 {
-    return end_job_;    
+    IProducer *self = static_cast<IProducer *>(arg);
+    self->produce();
+    return 0;
 }

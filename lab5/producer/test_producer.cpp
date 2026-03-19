@@ -4,11 +4,11 @@
 
 #include <stdio.h>
 
-TestProducer::TestProducer(const std::shared_ptr<ThreadSafeQueue<std::unique_ptr<ITask>>>& tasks, int count)
-: count_{count},
-tasks_{tasks}
+TestProducer::TestProducer(Resources& resources, int count)
+: IProducer(resources),
+count_{count}
 {
-    end_job_ = false;
+    res_.producer_end_job = false;
 }
 
 void TestProducer::produce()
@@ -16,7 +16,12 @@ void TestProducer::produce()
     for (int i = 0; i < count_; i++)
     {
         std::unique_ptr<ITask> task = std::make_unique<ActualTask>(i);
-        tasks_->push(std::move(task));
+        res_.queue.push(std::move(task));
     }
-    end_job_ = true;
+    res_.producer_end_job = true;
+    res_.total_tasks = count_;
+}
+
+uint64_t TestProducer::totalTasks() {
+    return count_;
 }

@@ -10,6 +10,7 @@
 #include "task_manager.hpp"
 #include "message_protocol_tools.hpp"
 #include "test_producer.hpp"
+#include "resources.hpp"
 #include <thread>
 
 
@@ -29,29 +30,30 @@ int main(int argc, char **argv)
     {
         throw std::invalid_argument("invalid argument count");
     }
-    int nt = atoi(argv[1]);
+    Resources resources;
+    resources.num_threads = atoi(argv[1]);
 
     pthread_t prod_thread;
-    pthread_t exec_threads[nt];
-    std::vector<std::unique_ptr<Executor>> executors(nt);
+    pthread_t exec_threads[resources.num_threads];
+    std::vector<std::unique_ptr<Executor>> executors(resources.num_threads);
 
-    TaskManager task_manager{size, rank, THREAD_RECV_TASKS};
+    TaskManager task_manager(resources, size, rank, THREAD_RECV_TASKS);
 
     int count = rank == 0 ? 5 : 100;
-    std::unique_ptr<IProducer> producer = std::make_unique<TestProducer>(task_manager.queue, count);
+    std::unique_ptr<IProducer> producer = std::make_unique<TestProducer>(resources, count);
     pthread_create(&prod_thread, NULL,
                    &IProducer::thread_func, producer.get());
 
-    for (int i = 0; i < nt; i++)
+    for (int i = 0; i < resources.num_threads; i++)
     {
-        executors[i] = std::make_unique<Executor>(task_manager.queue);
+        executors[i] = std::make_unique<Executor>(resources);
         pthread_create(&exec_threads[i], NULL,
                        &Executor::thread_func, executors[i].get());
     }
 
     task_manager.run();
 
-    for (int i = 0; i < nt; i++)
+    for (int i = 0; i < resources.num_threads; i++)
     {
         pthread_join(exec_threads[i], NULL);
     }

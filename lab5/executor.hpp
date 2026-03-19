@@ -1,16 +1,16 @@
 #pragma once
 
 #include "ITask.hpp"
-#include "thread_safe_queue.tpp"
+#include "resources.hpp"
 #include "ICommunication_strategy.hpp"
 
 class Executor
 {
 public:
     static void* thread_func(void* arg);
-    Executor(const std::shared_ptr<ThreadSafeQueue<std::unique_ptr<ITask>>>& tasks);
+    Executor(Resources& resources);
     void execute();
 
 private:
-    std::shared_ptr<ThreadSafeQueue<std::unique_ptr<ITask>>> tasks_;
+    Resources& res_;
 };
