@@ -23,6 +23,7 @@ private:
     bool tasks_requested_ = false;
     int fails_count = 0;
     std::chrono::steady_clock::time_point time_of_last_request;
+    bool communication_;
     bool need_to_request();
 
     Resources& res_;
@@ -45,6 +46,6 @@ private:
     std::pair<int, std::unique_ptr<Message>> recv();
 
 public:
-    TaskManager(Resources& resources, int process_count, int process_id, int thread_id);
+    TaskManager(Resources& resources, int process_count, int process_id, int thread_id, bool communication = true);
     void run();
 };

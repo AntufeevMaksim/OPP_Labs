@@ -12,7 +12,7 @@
 #include "test_producer.hpp"
 #include "resources.hpp"
 #include <thread>
-
+#include <iostream>
 
 using namespace std::chrono_literals;
 
@@ -26,20 +26,23 @@ int main(int argc, char **argv)
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    if (argc != 2)
+    if (argc != 4)
     {
         throw std::invalid_argument("invalid argument count");
     }
     Resources resources;
     resources.num_threads = atoi(argv[1]);
-
+    int task_count = atoi(argv[2]);
+    bool need_communication = !strcmp(argv[3], "comm");
+    printf("NNDD %d", need_communication);
+    
     pthread_t prod_thread;
     pthread_t exec_threads[resources.num_threads];
     std::vector<std::unique_ptr<Executor>> executors(resources.num_threads);
 
-    TaskManager task_manager(resources, size, rank, THREAD_RECV_TASKS);
+    TaskManager task_manager(resources, size, rank, THREAD_RECV_TASKS, need_communication);
 
-    int count = rank == 0 ? 5 : 100;
+    int count = rank == 0 ? 5 * task_count : 100 * task_count;
     std::unique_ptr<IProducer> producer = std::make_unique<TestProducer>(resources, count);
     pthread_create(&prod_thread, NULL,
                    &IProducer::thread_func, producer.get());
@@ -51,6 +54,7 @@ int main(int argc, char **argv)
                        &Executor::thread_func, executors[i].get());
     }
 
+    auto start = std::chrono::high_resolution_clock::now();
     task_manager.run();
 
     for (int i = 0; i < resources.num_threads; i++)
@@ -59,10 +63,10 @@ int main(int argc, char **argv)
     }
 
     pthread_join(prod_thread, NULL);
-    // std::thread::id thread_id = std::this_thread::get_id();
-    // std::cout << thread_id << std::endl;
-    // fflush(stdout);
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
+    std::cout << "total time: " << duration.count() / 1000.0 << std::endl;
     MPI_Finalize();
 
     return 0;

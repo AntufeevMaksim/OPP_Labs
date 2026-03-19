@@ -6,10 +6,11 @@
 #include <algorithm>
 #include <ranges>
 
-TaskManager::TaskManager(Resources& resources, int process_count, int process_id, int thread_id)
+TaskManager::TaskManager(Resources& resources, int process_count, int process_id, int thread_id, bool communication)
     : process_id_{process_id},
       thread_id_{thread_id},
       process_count_{process_count},
+      communication_{communication},
       res_{resources},
       total_tasks_(process_count, 0),
       completed_tasks_(process_count, 0)
@@ -81,12 +82,21 @@ void TaskManager::send_tasks(std::unique_ptr<RequestTasksMessage>& message, int 
 {
     std::vector<std::unique_ptr<ITask>> tasks;
 
-    auto [task, success] = res_.queue.try_pop();
-
-    if (success)
+    size_t i = 0;
+    while (i < res_.queue.size() / 2)
     {
+        auto [task, success] = res_.queue.try_pop();
+
+        if (!success)
+            break;
+
         tasks.push_back(std::move(task));
     }
+    
+    // if (success)
+    // {
+    //     tasks.push_back(std::move(task));
+    // }
 
     protocol_tools_.SendTasks(tasks, process, message->threadId());
 }
@@ -100,14 +110,11 @@ void TaskManager::recv_tasks(std::unique_ptr<SendTasksMessage>& message)
 
 bool TaskManager::need_to_request() 
 {
-    if (!tasks_requested_ && res_.queue.size() == 0)
+    if (communication_ && !tasks_requested_ && res_.queue.size() == 0)
     {
         auto now = std::chrono::steady_clock::now();
         bool need_to_send = (fails_count == 0) || (now - time_of_last_request >= std::chrono::milliseconds(100));
-        if (need_to_send)
-        {
-            fflush(stdout);
-        }
+
         return need_to_send;
     }
     return false;
@@ -152,8 +159,6 @@ void TaskManager::update_stat(std::unique_ptr<TasksStatMessage>& message, int pr
     uint64_t sum_total = std::accumulate(total_tasks_.begin(), total_tasks_.end(), 0);
     uint64_t sum_completed = std::accumulate(completed_tasks_.begin(), completed_tasks_.end(), 0);
 
-    printf("total: %lu\n", sum_total);
-    printf("completed: %lu\n", sum_completed);
     can_stop_ = (sum_total == sum_completed);
 }
 

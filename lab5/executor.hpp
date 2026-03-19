@@ -2,7 +2,6 @@
 
 #include "ITask.hpp"
 #include "resources.hpp"
-#include "ICommunication_strategy.hpp"
 
 class Executor
 {

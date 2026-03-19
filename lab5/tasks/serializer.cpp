@@ -1,6 +1,7 @@
 #include "serializer.hpp"
 
 #include "actual_task.hpp"
+#include "hard_random_task.hpp"
 
 #include <stdexcept>
 #include <cstring>
@@ -19,6 +20,9 @@ std::unique_ptr<ITask> Serializer::Deserialize(
     {
         case static_cast<int>(TaskID::ACTUAL_TASK):
             return ActualTask::deserialize(begin, end);
+
+        case static_cast<int>(TaskID::HARD_RANDOM_TASK):
+            return HardRandomTask::deserialize(begin, end);
 
         default:
             throw std::runtime_error("Unknown task id");

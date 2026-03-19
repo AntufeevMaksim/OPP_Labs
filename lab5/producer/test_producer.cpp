@@ -1,6 +1,7 @@
 #include "test_producer.hpp"
 
 #include "actual_task.hpp"
+#include "hard_random_task.hpp"
 
 #include <stdio.h>
 
@@ -15,7 +16,7 @@ void TestProducer::produce()
 {
     for (int i = 0; i < count_; i++)
     {
-        std::unique_ptr<ITask> task = std::make_unique<ActualTask>(i);
+        std::unique_ptr<ITask> task = std::make_unique<HardRandomTask>(i);
         res_.queue.push(std::move(task));
     }
     res_.producer_end_job = true;

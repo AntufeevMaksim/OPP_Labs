@@ -6,6 +6,7 @@
 enum class TaskID:int
 {
     ACTUAL_TASK,
+    HARD_RANDOM_TASK
 };
 
 
