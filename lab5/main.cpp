@@ -34,7 +34,6 @@ int main(int argc, char **argv)
     resources.num_threads = atoi(argv[1]);
     int task_count = atoi(argv[2]);
     bool need_communication = !strcmp(argv[3], "comm");
-    printf("NNDD %d", need_communication);
     
     pthread_t prod_thread;
     pthread_t exec_threads[resources.num_threads];

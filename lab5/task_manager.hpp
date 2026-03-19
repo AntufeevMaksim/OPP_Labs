@@ -37,7 +37,7 @@ private:
     
     std::random_device rd;
     std::mt19937 gen;
-    std::uniform_int_distribution<int> dist; // distribution in range [1, 6]
+    std::uniform_int_distribution<int> dist;
 
     void request_tasks();
     void send_tasks(std::unique_ptr<RequestTasksMessage>& message, int process);

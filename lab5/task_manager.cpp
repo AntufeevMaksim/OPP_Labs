@@ -27,7 +27,6 @@ void TaskManager::run()
         if (can_stop_)
         {
             stop();
-            printf("stopped %d\n", process_id_);
             break;
         }
 
@@ -92,12 +91,6 @@ void TaskManager::send_tasks(std::unique_ptr<RequestTasksMessage>& message, int 
 
         tasks.push_back(std::move(task));
     }
-    
-    // if (success)
-    // {
-    //     tasks.push_back(std::move(task));
-    // }
-
     protocol_tools_.SendTasks(tasks, process, message->threadId());
 }
 

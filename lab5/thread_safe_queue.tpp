@@ -74,10 +74,13 @@ public:
 
     size_t size() const
     {
-        return elems.size();
+        pthread_mutex_lock(&elems_mutex);
+        size_t size = elems.size();
+        pthread_mutex_unlock(&elems_mutex);
+        return size;
     }
 private:
     std::queue<T> elems;
-    pthread_mutex_t elems_mutex;
+    mutable pthread_mutex_t elems_mutex;
     pthread_cond_t not_empty_cond;
 };
